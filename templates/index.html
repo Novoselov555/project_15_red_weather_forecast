@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Введите города</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Введите города для получения прогноза погоды</h1>
+
+        <!-- Форма для ввода городов -->
+        <form action="/result" method="POST" id="city-form">
+            <div id="city-inputs">
+                <div class="form-group city-input">
+                    <label for="departure-city-0">Город отправления:</label>
+                    <input type="text" id="departure-city-0" name="cities[]" placeholder="Введите город" required>
+                </div>
+            </div>
+
+            <button type="button" id="add-city">Добавить город</button>
+            <button type="submit">Получить прогноз</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('add-city').addEventListener('click', function() {
+            const cityInputs = document.getElementById('city-inputs');
+            const inputCount = cityInputs.getElementsByClassName('city-input').length;
+
+            const newCityDiv = document.createElement('div');
+            newCityDiv.classList.add('form-group', 'city-input');
+            newCityDiv.innerHTML = `
+                <label for="departure-city-${inputCount}">Город:</label>
+                <input type="text" id="departure-city-${inputCount}" name="cities[]" placeholder="Введите город" required>
+            `;
+
+            cityInputs.appendChild(newCityDiv);
+        });
+    </script>
+
+</body>
+</html>

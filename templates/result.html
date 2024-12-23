@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Прогноз погоды</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Прогноз погоды для городов</h1>
+
+        <div class="city-selector">
+            <label for="city">Выберите город:</label>
+            <select id="city" onchange="updateWeather()">
+                {% for city in data %}
+                    <option value="{{ city['city_name'] }}">{{ city['city_name'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="interval-selector">
+            <label for="interval">Выберите временной интервал:</label>
+            <select id="interval" onchange="updateWeather()">
+                <option value="1">1 день</option>
+                <option value="3">3 дня</option>
+                <option value="5" selected>5 дней</option>
+            </select>
+        </div>
+
+        <div id="weather-info"></div>
+
+        <a href="/">Вернуться на главную страницу</a>
+    </div>
+
+    <script>
+        const weatherData = {{ data | tojson }};
+
+        function updateWeather() {
+            const selectedCity = document.getElementById('city').value;
+            const interval = parseInt(document.getElementById('interval').value);
+
+            const cityData = weatherData.find(city => city.city_name === selectedCity);
+            if (!cityData) {
+                document.getElementById('weather-info').innerHTML = '<p>Нет данных для выбранного города.</p>';
+                return;
+            }
+
+            let content = `<h2>Прогноз погоды для ${cityData.city_name}</h2>`;
+
+            for (let i = 0; i < interval; i++) {
+                content += `
+                <div class="weather-block">
+                    <h3>День ${i + 1}</h3>
+                    <p><strong>Температура (день):</strong> ${cityData.day_temp}°C</p>
+                    <p><strong>Вероятность дождя (день):</strong> ${cityData.day_rain}%</p>
+                    <p><strong>Влажность (день):</strong> ${cityData.day_humidity}%</p>
+                    <p><strong>Скорость ветра (день):</strong> ${cityData.day_wind} км/ч</p>
+                    <h4>Ночь:</h4>
+                    <p><strong>Температура (ночь):</strong> ${cityData.night_temp}°C</p>
+                    <p><strong>Вероятность дождя (ночь):</strong> ${cityData.night_rain}%</p>
+                    <p><strong>Влажность (ночь):</strong> ${cityData.night_humidity}%</p>
+                    <p><strong>Скорость ветра (ночь):</strong> ${cityData.night_wind} км/ч</p>
+                </div>`;
+            }
+
+            document.getElementById('weather-info').innerHTML = content;
+        }
+
+        // Первоначальное отображение
+        updateWeather();
+    </script>
+
+</body>
+</html>
