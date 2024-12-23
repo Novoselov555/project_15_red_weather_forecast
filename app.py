@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request
 from weather_receiver import WeatherReceiver, weather_key_parameters
 from convert_from_address_to_coordinates import GetCoords
-from check_bad_weather import check_bad_weather
 
 app = Flask(__name__)
 
@@ -26,13 +25,11 @@ def result():
                 day_rain = data['day_forecast']['rain_probability']
                 day_humidity = data['day_forecast']['humidity']
                 day_wind = data['day_forecast']['wind_speed']
-                # day_message = check_bad_weather()[0].split('\n')
                 # Ночные параметры
                 night_temp = data['min_temp']
                 night_rain = data['night_forecast']['rain_probability']
                 night_humidity = data['night_forecast']['humidity']
                 night_wind = data['night_forecast']['wind_speed']
-                # night_message = check_bad_weather()[1].split('\n')
 
                 params = {
                     'city_name': city,
@@ -44,8 +41,6 @@ def result():
                     'night_rain': night_rain,
                     'night_humidity': night_humidity,
                     'night_wind': night_wind,
-                    # 'day_message': day_message,
-                    # 'night_message': night_message,
                 }
                 ans.append(params)
 
