@@ -75,8 +75,9 @@ def weather_key_parameters():
         print(f'Произошла ошибка: {e}')
 
 
-# api_key = 'QGDkAZ7xfocLvQAGCNQZGwFxOrEFrCtG'
+# api_key = 'AGlRoTK491bc73SZrvSPGGx6fisQS586'
 # location = WeatherReceiver(api_key)
-# lat, lon = 52.516259, 13.377217
+# # lat, lon = 52.516259, 13.377217
+# lat, lon = 66.084712, 76.680559
 # location.get_weather(lat, lon)
 # weather_key_parameters()
