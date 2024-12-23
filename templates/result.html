@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Прогноз погоды</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
 
@@ -15,8 +14,12 @@
         <div class="city-selector">
             <label for="city">Выберите город:</label>
             <select id="city" onchange="updateWeather()">
+                {% set cities = [] %}
                 {% for city in data %}
-                    <option value="{{ city['city_name'] }}">{{ city['city_name'] }}</option>
+                {% if city['city_name'] not in cities %}
+                <option value="{{ city['city_name'] }}">{{ city['city_name'] }}</option>
+                {% set _ = cities.append(city['city_name']) %}
+                {% endif %}
                 {% endfor %}
             </select>
         </div>
@@ -30,11 +33,22 @@
             </select>
         </div>
 
-        <div id="weather-info"></div>
+        <div id="weather-info">
+            <!-- Сюда вставится информация о погоде для выбранного города -->
+        </div>
+
+        <!-- Контейнеры для графиков -->
+        <h2>Температурный график</h2>
+        <div id="temp-graph"></div>
+
+        <h2>График вероятности дождя</h2>
+        <div id="rain-graph"></div>
 
         <a href="/">Вернуться на главную страницу</a>
     </div>
 
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <iframe src="{{ url_for('static', filename='route_map.html') }}" width="100%" height="600px" frameborder="0"></iframe>
     <script>
         const weatherData = {{ data | tojson }};
 
@@ -42,36 +56,112 @@
             const selectedCity = document.getElementById('city').value;
             const interval = parseInt(document.getElementById('interval').value);
 
-            const cityData = weatherData.find(city => city.city_name === selectedCity);
-            if (!cityData) {
+            // Фильтруем данные по выбранному городу
+            const cityData = weatherData.filter(city => city.city_name === selectedCity);
+            if (!cityData.length) {
                 document.getElementById('weather-info').innerHTML = '<p>Нет данных для выбранного города.</p>';
                 return;
             }
 
-            let content = `<h2>Прогноз погоды для ${cityData.city_name}</h2>`;
+            let content = `<h2>Прогноз погоды для ${selectedCity}</h2>`;
 
-            for (let i = 0; i < interval; i++) {
+            // Генерируем прогноз на каждый день
+            for (let i = 0; i < interval && i < cityData.length; i++) {
                 content += `
                 <div class="weather-block">
                     <h3>День ${i + 1}</h3>
-                    <p><strong>Температура (день):</strong> ${cityData.day_temp}°C</p>
-                    <p><strong>Вероятность дождя (день):</strong> ${cityData.day_rain}%</p>
-                    <p><strong>Влажность (день):</strong> ${cityData.day_humidity}%</p>
-                    <p><strong>Скорость ветра (день):</strong> ${cityData.day_wind} км/ч</p>
+                    <p><strong>Температура (день):</strong> ${cityData[i].day_temp}°C</p>
+                    <p><strong>Вероятность дождя (день):</strong> ${cityData[i].day_rain}%</p>
+                    <p><strong>Влажность (день):</strong> ${cityData[i].day_humidity}%</p>
+                    <p><strong>Скорость ветра (день):</strong> ${cityData[i].day_wind} км/ч</p>
                     <h4>Ночь:</h4>
-                    <p><strong>Температура (ночь):</strong> ${cityData.night_temp}°C</p>
-                    <p><strong>Вероятность дождя (ночь):</strong> ${cityData.night_rain}%</p>
-                    <p><strong>Влажность (ночь):</strong> ${cityData.night_humidity}%</p>
-                    <p><strong>Скорость ветра (ночь):</strong> ${cityData.night_wind} км/ч</p>
+                    <p><strong>Температура (ночь):</strong> ${cityData[i].night_temp}°C</p>
+                    <p><strong>Вероятность дождя (ночь):</strong> ${cityData[i].night_rain}%</p>
+                    <p><strong>Влажность (ночь):</strong> ${cityData[i].night_humidity}%</p>
+                    <p><strong>Скорость ветра (ночь):</strong> ${cityData[i].night_wind} км/ч</p>
                 </div>`;
             }
 
             document.getElementById('weather-info').innerHTML = content;
+
+            // Обновляем графики для выбранного города
+            updateGraphs(cityData);
         }
 
-        // Первоначальное отображение
+        function addCity() {
+            const cityInputs = document.getElementById('city-inputs');
+            const inputCount = cityInputs.getElementsByTagName('input').length;
+
+            const newCityDiv = document.createElement('div');
+            newCityDiv.classList.add('form-group');
+            newCityDiv.innerHTML = `
+                <label for="city${inputCount + 1}">Город ${inputCount + 1}:</label>
+                <input type="text" name="cities[]" required>
+            `;
+            cityInputs.appendChild(newCityDiv);
+        }
+
+        function updateGraphs(cityData) {
+            const days = cityData.map((day, index) => `День ${index + 1}`);
+            const maxTemps = cityData.map(day => day.day_temp);
+            const minTemps = cityData.map(day => day.night_temp);
+            const rainDay = cityData.map(day => day.day_rain);
+            const rainNight = cityData.map(day => day.night_rain);
+
+            // Температурный график
+            const tempData = [
+                {
+                    x: days,
+                    y: maxTemps,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'Макс. температура'
+                },
+                {
+                    x: days,
+                    y: minTemps,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'Мин. температура'
+                }
+            ];
+
+            const tempLayout = {
+                title: `Температурный прогноз - ${cityData[0].city_name}`,
+                xaxis: { title: 'Дни' },
+                yaxis: { title: 'Температура (°C)' }
+            };
+
+            Plotly.newPlot('temp-graph', tempData, tempLayout);
+
+            // График вероятности дождя
+            const rainData = [
+                {
+                    x: days,
+                    y: rainDay,
+                    type: 'bar',
+                    name: 'Дождь (день)'
+                },
+                {
+                    x: days,
+                    y: rainNight,
+                    type: 'bar',
+                    name: 'Дождь (ночь)'
+                }
+            ];
+
+            const rainLayout = {
+                title: `Вероятность дождя - ${cityData[0].city_name}`,
+                xaxis: { title: 'Дни' },
+                yaxis: { title: 'Вероятность (%)' },
+                barmode: 'group'
+            };
+
+            Plotly.newPlot('rain-graph', rainData, rainLayout);
+        }
+
+        // Первоначальное отображение при загрузке страницы
         updateWeather();
     </script>
 
 </body>
-</html>
